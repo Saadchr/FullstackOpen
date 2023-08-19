@@ -43,11 +43,29 @@ const Persons = ({ onClick, persons }) => (
   </ul>
 );
 
+const Notification = ({ message }) => {
+  if (message === null) {
+    return null;
+  }
+
+  return <div className="notification">{message}</div>;
+};
+
+const ErrorMessage = ({ message }) => {
+  if (message === null) {
+    return null;
+  }
+
+  return <div className="error">{message}</div>;
+};
+
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
+  const [notifMessage, setNotifMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
   console.log(persons);
   useEffect(() => {
     console.log("effect");
@@ -58,14 +76,27 @@ const App = () => {
   }, []);
 
   const handleDelete = (id) => {
+    const personToDelete = persons.find((person) => person.id === id);
     if (window.confirm("Are you sure you want to delete this person?")) {
       personService
         .erase(id)
         .then(() => {
           setPersons(persons.filter((person) => person.id !== id));
+          setNotifMessage(
+            `Note: ${personToDelete.name} has been deleted from the server`
+          );
+          setTimeout(() => {
+            setNotifMessage(null);
+          }, 5000);
         })
         .catch((error) => {
-          alert("An error occurred while deleting the person");
+          alert(`${error}: An error occurred while deleting the person`);
+          setErrorMessage(
+            `Note: ${personToDelete.name}  has already been deleted from the server`
+          );
+          setTimeout(() => {
+            setErrorMessage(null);
+          }, 5000);
         });
     }
   };
@@ -121,6 +152,10 @@ const App = () => {
           ...persons.filter((person) => person.id !== response.data.id),
           response.data,
         ]);
+        setNotifMessage(`Note: ${newPerson.name} has been created`);
+        setTimeout(() => {
+          setNotifMessage(null);
+        }, 5000);
 
         setNewName("");
         setNewNumber("");
@@ -139,7 +174,8 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
-
+      <Notification message={notifMessage} />
+      <ErrorMessage message={errorMessage} />
       <Filter value={filter} onChange={handleFilter} />
 
       <h3>Add a new</h3>
