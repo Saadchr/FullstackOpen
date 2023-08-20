@@ -1,11 +1,19 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+const apiKey = process.env.REACT_APP_API_KEY;
 
 function App() {
   const [inputCountry, setInputCountry] = useState("");
   const [countries, setCountries] = useState([]);
   const [country, setCountry] = useState(null);
   const [message, setMessage] = useState(null);
+  const [weather, setWeather] = useState([]);
+  const [iconWeather, setIconWeather] = useState(null);
+
+  const handleShowClick = (selectedCountry) => {
+    setCountries([]);
+    setCountry(selectedCountry);
+  };
 
   const handleInput = (event) => {
     event.preventDefault();
@@ -47,6 +55,19 @@ function App() {
           setCountry(filteredCountries[0]);
           setCountries([]);
           setMessage(null);
+          console.log(filteredCountries[0].capitalInfo.latlng); // Return an array of 2 elements
+          const [lat, lon] = filteredCountries[0].capitalInfo.latlng; // This gives an error main.903e3382d33d5ddb17f9.hot-update.js:67 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'latlng')
+          console.log(apiKey);
+
+          axios
+            .get(
+              `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`
+            )
+            .then((response) => {
+              console.log(response.data);
+              setIconWeather(response.data.weather[0].icon);
+              setWeather(response.data.main);
+            });
         } else {
           setMessage("No country matches your request.");
           setCountries([]);
@@ -65,17 +86,23 @@ function App() {
         onChange={handleInput}
       />
       {message && <div className="error">{message}</div>}
+
       {countries.map((c, index) => (
-        <Country key={index} country={c} />
+        <div key={index} style={{ display: "flex", alignItems: "center" }}>
+          <Country country={c} />
+          <button onClick={() => handleShowClick(c)}>Show</button>
+        </div>
       ))}
-      {country && <Detail country={country} />}
+      {country && (
+        <Detail country={country} weather={weather} iconWeather={iconWeather} />
+      )}
     </>
   );
 }
 
 const Country = ({ country }) => <li>{country.name.common}</li>;
 
-const Detail = ({ country }) => (
+const Detail = ({ country, weather, iconWeather }) => (
   <>
     <h1> {country.name.common}</h1>
     <p>capital:{country.capital[0]}</p>
@@ -85,6 +112,12 @@ const Detail = ({ country }) => (
       <li key={index}> {language} </li>
     ))}
     <img src={country.flags.png} alt="" />
+    <h1>Weather in {country.capital[0]}</h1>
+    <p>Temperature felt like: {weather.feels_like}°c</p>
+    <img
+      src={`https://openweathermap.org/img/wn/${iconWeather}@2x.png`}
+      alt=""
+    />
   </>
 );
 
